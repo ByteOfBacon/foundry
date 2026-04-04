@@ -1,0 +1,20 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "Map Data Generator",
+  "outputfilename": "map-data-generator",
+  "frontend:install": "pnpm install",
+  "frontend:build": "pnpm run build",
+  "frontend:dev:watcher": "pnpm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Subway Builder Modded",
+    "email": "admin@subwaybuildermodded.com"
+  },
+  "info": {
+    "companyName": "Subway Builder Modded",
+    "productName": "Map Data Generator",
+    "productVersion": "v0.1.0",
+    "copyright": "Copyright (c) 2026 Subway Builder Modded",
+    "comments": "Generate and edit map data for Subway Builder cities"
+  }
+}

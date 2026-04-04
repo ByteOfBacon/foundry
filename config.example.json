@@ -1,0 +1,18 @@
+{
+  "tile-zoom-level": 13,
+  "places": [
+    {
+      "code": "CHI",
+      "name": "Chicago",
+      "locale": "en",
+      "bbox": [-87.94, 41.64, -87.52, 42.02],
+      "thumbnailBbox": [-87.72, 41.75, -87.55, 41.97]
+    },
+    {
+      "code": "NYC",
+      "name": "New York City",
+      "locale": "en",
+      "bbox": [-74.26, 40.49, -73.7, 40.92]
+    }
+  ]
+}

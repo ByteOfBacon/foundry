@@ -1,0 +1,16 @@
+# Next.js
+.next/
+out/
+node_modules/
+
+# Generated data (large, not committed)
+raw_data/
+processed_data/
+map_tiles/*.pmtiles
+
+# Config (copy from config.example.json and fill in)
+config.json
+
+# OS
+.DS_Store
+Thumbs.db

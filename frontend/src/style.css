@@ -1,0 +1,156 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+}
+
+/* ── Base tokens ──────────────────────────────────────────────────────────── */
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.13 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.13 0 0);
+  --primary: oklch(0.25 0 0);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.95 0 0);
+  --secondary-foreground: oklch(0.25 0 0);
+  --muted: oklch(0.95 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.93 0 0);
+  --accent-foreground: oklch(0.2 0 0);
+  --destructive: #b03a3a;
+  --border: oklch(0.88 0 0);
+  --input: oklch(0.88 0 0);
+  --ring: oklch(0.65 0 0);
+  --surface-raised: oklch(0.97 0 0);
+  --surface-sunken: oklch(0.93 0 0);
+}
+
+/* ── Dark mode ────────────────────────────────────────────────────────────── */
+.dark {
+  --background: oklch(0.11 0 0);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.16 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.92 0 0);
+  --primary-foreground: oklch(0.16 0 0);
+  --secondary: oklch(0.22 0 0);
+  --secondary-foreground: oklch(0.92 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.62 0 0);
+  --accent: oklch(0.24 0 0);
+  --accent-foreground: oklch(0.9 0 0);
+  --destructive: #e05555;
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.55 0 0);
+  --surface-raised: oklch(0.19 0 0);
+  --surface-sunken: oklch(0.09 0 0);
+}
+
+/* ── Red accent (applied via .datagen-accent wrapper) ─────────────────────── */
+.datagen-accent {
+  --suite-accent-light: #d94f4f;
+  --suite-accent-dark: #ff6b6b;
+  --suite-primary-light: #d94f4f55;
+  --suite-primary-dark: #d94f4f55;
+  --suite-text-inverted-light: #f2f2f2;
+  --suite-text-inverted-dark: #232323;
+
+  --primary: var(--suite-accent-light);
+  --primary-foreground: var(--suite-text-inverted-light);
+  --secondary: oklch(0.95 0 0);
+  --secondary-foreground: oklch(0.25 0 0);
+  --muted: oklch(0.95 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: color-mix(in srgb, var(--suite-accent-light) 15%, white);
+  --accent-foreground: color-mix(in srgb, var(--suite-accent-light) 70%, black);
+  --ring: color-mix(in srgb, var(--suite-accent-light) 45%, transparent);
+}
+
+.dark .datagen-accent {
+  --primary: var(--suite-accent-dark);
+  --primary-foreground: var(--suite-text-inverted-dark);
+  --accent: color-mix(in srgb, var(--suite-accent-dark) 22%, black);
+  --accent-foreground: color-mix(in srgb, var(--suite-accent-dark) 72%, white);
+  --ring: color-mix(in srgb, var(--suite-accent-dark) 48%, transparent);
+}
+
+/* ── Toasts ───────────────────────────────────────────────────────────────── */
+[data-sonner-toaster] { z-index: 2147483647 !important; }
+[data-sonner-toast] { z-index: 2147483647 !important; }
+[data-sonner-toaster] [data-sonner-toast] {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html, body, #root {
+    @apply bg-background text-foreground overflow-x-hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html, body { @apply h-full overflow-hidden; }
+  #root {
+    @apply h-full min-h-screen overflow-y-auto;
+    overscroll-behavior-y: none;
+  }
+  html { overscroll-behavior-y: none; }
+  ::-webkit-scrollbar { width: 0; height: 0; display: none; }
+}
+
+/* ── Theme transition ─────────────────────────────────────────────────────── */
+@layer base {
+  .theme-ready,
+  .theme-ready body,
+  .theme-ready [class*='bg-'],
+  .theme-ready [class*='text-'],
+  .theme-ready [class*='border-'] {
+    transition: background-color 200ms ease, color 200ms ease,
+      border-color 200ms ease;
+  }
+}
+
+/* ── MapLibre overrides ───────────────────────────────────────────────────── */
+.maplibregl-ctrl-logo { display: none !important; }
+.maplibregl-ctrl-attrib { font-size: 10px !important; }
+.maplibregl-canvas-container.maplibregl-interactive { cursor: crosshair; }
+.maplibregl-canvas-container.maplibregl-interactive.cursor-grab { cursor: grab; }
+.maplibregl-canvas-container.maplibregl-interactive.cursor-pointer { cursor: pointer; }
+
+/* Log terminal */
+.log-terminal {
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}

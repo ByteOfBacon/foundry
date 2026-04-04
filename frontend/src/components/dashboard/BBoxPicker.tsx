@@ -52,12 +52,27 @@ export function BBoxPicker({ value, onChange }: BBoxPickerProps) {
     const initialCenter = bbox ? bboxToCenter(bbox) : [0, 20];
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: 'https://tiles.openfreemap.org/styles/liberty',
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxzoom: 19,
+          },
+        },
+        layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+      },
       center: initialCenter as [number, number],
       zoom: bbox ? 8 : 2,
       attributionControl: false,
     });
     mapRef.current = map;
+
+    // Trigger resize after dialog open animation completes so map fills container
+    const resizeTimer = setTimeout(() => map.resize(), 150);
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
@@ -125,7 +140,10 @@ export function BBoxPicker({ value, onChange }: BBoxPickerProps) {
       drawRef.current.start = null;
     });
 
-    return () => map.remove();
+    return () => {
+      clearTimeout(resizeTimer);
+      try { map.remove(); } catch { /* ignore WebGL cleanup errors in Wails WebView */ }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -25,7 +25,7 @@ export function CityPanel({ place }: CityPanelProps) {
   const { editPlace, deletePlace } = useConfigStore();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const handleDelete = async () => {
     if (!confirm(`Delete ${place.name}? This will not delete any generated files.`)) return;

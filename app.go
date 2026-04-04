@@ -253,6 +253,56 @@ func (a *App) WriteDemandData(code string, data DemandData) Response[bool] {
 	return ok(true)
 }
 
+// ─── Demand file dialogs ──────────────────────────────────────────────────────
+
+func (a *App) OpenDemandFileDialog() Response[DemandData] {
+	path, err := wailsruntime.OpenFileDialog(a.ctx, wailsruntime.OpenDialogOptions{
+		Title: "Open demand data file",
+		Filters: []wailsruntime.FileFilter{
+			{DisplayName: "JSON files", Pattern: "*.json"},
+		},
+	})
+	if err != nil || path == "" {
+		return Response[DemandData]{Status: "cancelled"}
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return errResp[DemandData](err)
+	}
+	var d DemandData
+	if err := json.Unmarshal(raw, &d); err != nil {
+		return errResp[DemandData](err)
+	}
+	if d.Points == nil {
+		d.Points = []DemandPoint{}
+	}
+	if d.Pops == nil {
+		d.Pops = []Pop{}
+	}
+	return Response[DemandData]{Status: "success", Data: d}
+}
+
+func (a *App) SaveDemandFileAs(data DemandData) Response[bool] {
+	path, err := wailsruntime.SaveFileDialog(a.ctx, wailsruntime.SaveDialogOptions{
+		Title:           "Save demand data file",
+		DefaultFilename: "demand_data.json",
+		Filters: []wailsruntime.FileFilter{
+			{DisplayName: "JSON files", Pattern: "*.json"},
+		},
+	})
+	if err != nil || path == "" {
+		return Response[bool]{Status: "cancelled"}
+	}
+	raw, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return errResp[bool](err)
+	}
+	if err := os.WriteFile(path, raw, 0644); err != nil {
+		return errResp[bool](err)
+	}
+	return ok(true)
+}
+
 // ─── Script runner ────────────────────────────────────────────────────────────
 
 func (a *App) findNodeJS() (string, error) {
@@ -419,4 +469,73 @@ func (a *App) CheckScriptsSetup() Response[bool] {
 		return ok(false)
 	}
 	return ok(true)
+}
+
+func (a *App) InstallScripts() {
+	go func() {
+		emit := func(level, text string) {
+			wailsruntime.EventsEmit(a.ctx, "script:log", scriptLogEvent{
+				Level: level, Text: text, Ts: time.Now().UnixMilli(),
+			})
+		}
+
+		emit("info", "Installing script dependencies…")
+
+		// Prefer pnpm, fall back to npm
+		pm := "npm"
+		if _, err := exec.LookPath("pnpm"); err == nil {
+			pm = "pnpm"
+		}
+		if runtime.GOOS == "windows" {
+			if _, err := exec.LookPath("pnpm.cmd"); err == nil {
+				pm = "pnpm.cmd"
+			} else if _, err := exec.LookPath("npm.cmd"); err == nil {
+				pm = "npm.cmd"
+			}
+		}
+
+		cmd := exec.CommandContext(a.ctx, pm, "install")
+		cmd.Dir = a.scriptDir
+		cmd.Env = append(os.Environ(), "FORCE_COLOR=0")
+
+		stdout, _ := cmd.StdoutPipe()
+		stderr, _ := cmd.StderrPipe()
+
+		if err := cmd.Start(); err != nil {
+			emit("error", fmt.Sprintf("Failed to start package manager: %v", err))
+			code := 1
+			wailsruntime.EventsEmit(a.ctx, "install:exit", scriptExitEvent{Code: &code, Ts: time.Now().UnixMilli()})
+			return
+		}
+
+		streamLines := func(r io.Reader, level string) {
+			scanner := bufio.NewScanner(r)
+			for scanner.Scan() {
+				if line := scanner.Text(); line != "" {
+					emit(level, line)
+				}
+			}
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() { defer wg.Done(); streamLines(stdout, "info") }()
+		go func() { defer wg.Done(); streamLines(stderr, "warn") }()
+		wg.Wait()
+
+		exitCode := 0
+		if err := cmd.Wait(); err != nil {
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				exitCode = exitErr.ExitCode()
+			} else {
+				exitCode = 1
+			}
+		}
+
+		if exitCode == 0 {
+			emit("info", "Dependencies installed successfully.")
+		}
+		wailsruntime.EventsEmit(a.ctx, "install:exit", scriptExitEvent{Code: intPtr(exitCode), Ts: time.Now().UnixMilli()})
+	}()
 }

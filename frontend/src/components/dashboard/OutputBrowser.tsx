@@ -16,9 +16,14 @@ export function OutputBrowser({ placeCode }: OutputBrowserProps) {
 
   const load = async () => {
     setLoading(true);
-    const res = await ListOutputFiles();
-    if (res.status === 'success') setOutputs(res.data);
-    setLoading(false);
+    try {
+      const res = await ListOutputFiles();
+      if (res.status === 'success') setOutputs(res.data);
+    } catch {
+      // Wails runtime not available yet — silently ignore
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

@@ -18,8 +18,16 @@ export function GetDataDir() {
   return window['go']['main']['App']['GetDataDir']();
 }
 
+export function InstallScripts() {
+  return window['go']['main']['App']['InstallScripts']();
+}
+
 export function ListOutputFiles() {
   return window['go']['main']['App']['ListOutputFiles']();
+}
+
+export function OpenDemandFileDialog() {
+  return window['go']['main']['App']['OpenDemandFileDialog']();
 }
 
 export function OpenOutputFolder(arg1) {
@@ -36,6 +44,10 @@ export function RunScript(arg1, arg2) {
 
 export function SaveConfig(arg1) {
   return window['go']['main']['App']['SaveConfig'](arg1);
+}
+
+export function SaveDemandFileAs(arg1) {
+  return window['go']['main']['App']['SaveDemandFileAs'](arg1);
 }
 
 export function StopScript() {

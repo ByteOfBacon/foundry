@@ -10,7 +10,11 @@ export function GetConfig():Promise<main.Response_main_GeneratorConfig_>;
 
 export function GetDataDir():Promise<main.Response_string_>;
 
+export function InstallScripts():Promise<void>;
+
 export function ListOutputFiles():Promise<main.Response___main_PlaceOutput_>;
+
+export function OpenDemandFileDialog():Promise<main.Response_main_DemandData_>;
 
 export function OpenOutputFolder(arg1:string):Promise<void>;
 
@@ -19,6 +23,8 @@ export function ReadDemandData(arg1:string):Promise<main.Response_main_DemandDat
 export function RunScript(arg1:string,arg2:string):Promise<void>;
 
 export function SaveConfig(arg1:main.GeneratorConfig):Promise<main.Response_bool_>;
+
+export function SaveDemandFileAs(arg1:main.DemandData):Promise<main.Response_bool_>;
 
 export function StopScript():Promise<void>;
 

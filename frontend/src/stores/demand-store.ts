@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 import type { DemandData, DemandPoint, Pop } from '@/lib/types';
-import { ReadDemandData, WriteDemandData } from '@/wailsjs/go/main/App';
+import { OpenDemandFileDialog, SaveDemandFileAs } from '@/wailsjs/go/main/App';
 
 interface DemandState {
-  placeCode: string | null;
   data: DemandData | null;
   selectedPointId: string | null;
   dirty: boolean;
   loading: boolean;
   saving: boolean;
 
-  load: (code: string) => Promise<void>;
-  save: () => Promise<void>;
+  openFile: () => Promise<boolean>;
+  saveAs: () => Promise<boolean>;
+  loadData: (data: DemandData) => void;
   selectPoint: (id: string | null) => void;
   addPoint: (point: DemandPoint) => void;
   updatePoint: (point: DemandPoint) => void;
@@ -22,34 +22,40 @@ interface DemandState {
 }
 
 export const useDemandStore = create<DemandState>((set, get) => ({
-  placeCode: null,
   data: null,
   selectedPointId: null,
   dirty: false,
   loading: false,
   saving: false,
 
-  load: async (code) => {
-    set({ loading: true, placeCode: code, selectedPointId: null });
-    const res = await ReadDemandData(code);
-    set({
-      data: res.status === 'success' ? res.data : { points: [], pops: [] },
-      dirty: false,
-      loading: false,
-    });
+  openFile: async () => {
+    set({ loading: true });
+    try {
+      const res = await OpenDemandFileDialog();
+      if (res.status === 'cancelled') return false;
+      if (res.status === 'error') throw new Error((res as { error?: string }).error ?? 'Unknown error');
+      set({ data: res.data, dirty: false, selectedPointId: null });
+      return true;
+    } finally {
+      set({ loading: false });
+    }
   },
 
-  save: async () => {
-    const { placeCode, data } = get();
-    if (!placeCode || !data) return;
+  saveAs: async () => {
+    const { data } = get();
+    if (!data) return false;
     set({ saving: true });
     try {
-      await WriteDemandData(placeCode, data);
-      set({ dirty: false });
+      const res = await SaveDemandFileAs(data);
+      if (res.status === 'cancelled') return false;
+      if (res.status === 'success') set({ dirty: false });
+      return res.status === 'success';
     } finally {
       set({ saving: false });
     }
   },
+
+  loadData: (data) => set({ data, dirty: false, selectedPointId: null }),
 
   selectPoint: (id) => set({ selectedPointId: id }),
 

@@ -3,8 +3,6 @@
 
 'use strict';
 
-// In production these are injected by the Wails v2 runtime as window.go.main.App.*
-// During dev/build, these stubs return rejected promises (no runtime available).
 function call(name, ...args) {
   const fn = window?.go?.main?.App?.[name];
   if (fn) return fn(...args);
@@ -18,7 +16,10 @@ export const RunScript = (script, placeCode) => call('RunScript', script, placeC
 export const StopScript = () => call('StopScript');
 export const ReadDemandData = (code) => call('ReadDemandData', code);
 export const WriteDemandData = (code, data) => call('WriteDemandData', code, data);
+export const OpenDemandFileDialog = () => call('OpenDemandFileDialog');
+export const SaveDemandFileAs = (data) => call('SaveDemandFileAs', data);
 export const GetDataDir = () => call('GetDataDir');
 export const OpenOutputFolder = (code) => call('OpenOutputFolder', code);
 export const CheckNodeJS = () => call('CheckNodeJS');
 export const CheckScriptsSetup = () => call('CheckScriptsSetup');
+export const InstallScripts = () => call('InstallScripts');

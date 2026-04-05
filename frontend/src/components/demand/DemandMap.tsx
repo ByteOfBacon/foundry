@@ -434,7 +434,6 @@ export function DemandMap({
     });
 
     return () => map.remove();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

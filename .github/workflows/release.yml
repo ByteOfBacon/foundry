@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  VERSION: ${{ github.ref_name }}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: $HOME/AppData/Local/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install NSIS
+        run: |
+          choco install nsis -y
+          echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install --frozen-lockfile
+
+      - name: Build Windows (${{ matrix.arch }}) with NSIS installer
+        run: |
+          chcp 65001
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-version.ps1
+          wails build -platform windows/${{ matrix.arch }} -nsis
+
+      - name: Rename artifacts
+        run: |
+          Move-Item build\bin\foundry-${{ matrix.arch }}-installer.exe build\bin\foundry-${{ env.VERSION }}-windows-${{ matrix.arch }}-installer.exe
+          Compress-Archive -Path build\bin\foundry.exe -DestinationPath build\bin\foundry-${{ env.VERSION }}-windows-${{ matrix.arch }}-portable.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}-artifacts
+          path: |
+            build/bin/foundry-${{ env.VERSION }}-windows-${{ matrix.arch }}-installer.exe
+            build/bin/foundry-${{ env.VERSION }}-windows-${{ matrix.arch }}-portable.zip
+
+  release:
+    needs: [build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: ${{contains(github.ref_name, '+rc')}}
+          generate_release_notes: true
+          files: |
+            foundry-${{ env.VERSION }}-windows-amd64-installer.exe
+            foundry-${{ env.VERSION }}-windows-amd64-portable.zip
+            foundry-${{ env.VERSION }}-windows-arm64-installer.exe
+            foundry-${{ env.VERSION }}-windows-arm64-portable.zip

@@ -67,6 +67,7 @@ interface DemandState {
   _history: HistoryState;
 
   openFile: () => Promise<boolean>;
+  closeFile: () => void;
   saveAs: () => Promise<boolean>;
   loadData: (data: DemandData) => void;
   selectPoint: (id: string | null) => void;
@@ -137,6 +138,17 @@ export const useDemandStore = create<DemandState>((set, get) => ({
       set({ loading: false });
     }
   },
+
+  closeFile: () =>
+    set({
+      data: null,
+      selectedPointId: null,
+      dirty: false,
+      canUndo: false,
+      canRedo: false,
+      _baseline: null,
+      _history: emptyHistory(),
+    } as DemandStateInternalPatch),
 
   saveAs: async () => {
     const { data } = get();

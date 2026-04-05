@@ -1,18 +1,37 @@
-# Next.js
-.next/
-out/
+# Frontend and JavaScript dependencies
 node_modules/
+frontend/node_modules/
+scripts/node_modules/
+
+# Frontend build outputs
+frontend/dist/
+frontend/coverage/
+frontend/.vite/
+
+# Wails generated frontend bindings (re-generated on demand)
+frontend/wailsjs/
+
+# Build artifacts
+build/bin/
 
 # Generated data (large, not committed)
 raw_data/
 processed_data/
 map_tiles/*.pmtiles
+demand_data.*
 
-# Config (copy from config.example.json and fill in)
+# Local runtime config/state
 config.json
 
-# OS
+# Tooling caches and local quality outputs
+.tmp/
+tmp/
+.gocache/
+.pnpm-store/
+coverage/
+coverage.out
+coverage_func.txt
+
+# OS artifacts
 .DS_Store
 Thumbs.db
-
-demand_data.*

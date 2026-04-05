@@ -58,9 +58,9 @@ export function DashboardPage() {
   const nodeOk = nodeStatus?.available ?? false;
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Status bar — explicit foreground colors for legibility in both themes */}
-      <div className="flex items-center gap-3 px-4 py-2 border-b bg-muted/40 text-xs shrink-0">
+    <div className="flex h-full flex-col gap-4">
+      {/* Status bar */}
+      <div className="flex shrink-0 items-center gap-3 rounded-xl border border-border/70 bg-background/90 px-4 py-2.5 text-xs shadow-sm backdrop-blur-md">
         {/* Node.js */}
         <div className="flex items-center gap-1.5">
           {nodeOk ? (
@@ -127,7 +127,7 @@ export function DashboardPage() {
 
       {/* City list */}
       <ScrollArea className="flex-1">
-        <div className="p-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {config.places.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
               <p className="text-sm">No cities configured yet.</p>

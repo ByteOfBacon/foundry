@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 
 interface PointPanelProps {
   point: DemandPoint;
+  onClose?: () => void;
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -22,7 +23,7 @@ const greenButton = `${buttonBase} h-8 border-green-500/35 bg-green-500/12 px-3 
 const redButton = `${buttonBase} h-8 border-red-500/35 bg-red-500/12 px-3 text-red-700 hover:bg-red-500/20 dark:text-red-300`;
 const dropdownButton = 'flex h-9 w-full items-center gap-2 rounded-md border border-border/80 bg-background px-3 text-left text-sm font-semibold text-foreground transition-colors hover:bg-muted/30';
 
-export function PointPanel({ point }: PointPanelProps) {
+export function PointPanel({ point, onClose }: PointPanelProps) {
   const { data, updatePoint, deletePoint, updatePop, deletePop, addPop } = useDemandStore();
   const [form, setForm] = useState(point);
   const [popTab, setPopTab] = useState<'residents' | 'jobs'>('residents');
@@ -521,6 +522,9 @@ export function PointPanel({ point }: PointPanelProps) {
           className={`${greenButton} disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-green-500/12`}
         >
           Save Point Changes
+        </button>
+        <button onClick={onClose} className={grayButton}>
+          Close
         </button>
         <button onClick={handleDeletePoint} className={redButton}>
           Delete Point

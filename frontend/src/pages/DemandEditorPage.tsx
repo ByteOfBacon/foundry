@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
-import { FolderOpen, Save, Plus, Loader2, FileJson2, MapPin, Home, Briefcase, PanelRight, X, Undo2, Redo2 } from 'lucide-react';
+import { FolderOpen, Save, Plus, Loader2, FileJson2, MapPin, Home, Briefcase, PanelRight, X, Undo2, Redo2, FolderX } from 'lucide-react';
 import { SplitSquareHorizontal } from 'lucide-react';
 import { useDemandStore } from '@/stores/demand-store';
 import { useTheme } from '@/hooks/use-theme';
@@ -24,6 +24,7 @@ export function DemandEditorPage() {
     canUndo,
     canRedo,
     openFile,
+    closeFile,
     saveAs,
     selectPoint,
     addPoint,
@@ -81,6 +82,17 @@ export function DemandEditorPage() {
   const handleSaveAs = async () => {
     const saved = await saveAs();
     if (saved) toast.success('Demand data saved');
+  };
+
+  const handleCloseFile = () => {
+    if (dirty) {
+      const ok = confirm('You have unsaved changes. Close file anyway?');
+      if (!ok) return;
+    }
+    closeFile();
+    setAddMode(false);
+    setQuery('');
+    toast.success('Closed demand file');
   };
 
   const handleNormalize = () => {
@@ -141,7 +153,8 @@ export function DemandEditorPage() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <div className="absolute inset-0">
+      {/* Map fills the full viewport height so it extends behind the floating navbar */}
+      <div className="fixed inset-0 z-0">
         {data ? (
           <DemandMap
             points={data.points}
@@ -169,17 +182,28 @@ export function DemandEditorPage() {
       </div>
 
       {addMode && (
-        <div className="absolute left-1/2 top-4 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow-xl">
+        <div className="fixed left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow-xl" style={{ top: 'calc(var(--app-navbar-offset, 5.5rem) + 0.75rem)' }}>
           <MapPin className="size-3.5" />
           Click map to place a point and press Esc to cancel
         </div>
       )}
 
-      <div className="absolute left-2 right-2 top-2 z-20 flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 sm:left-3 sm:right-3 sm:top-3">
+      <div className="fixed left-0 right-0 z-40 flex items-center gap-2 overflow-x-auto whitespace-nowrap px-[clamp(1rem,2.8vw,2.5rem)] pb-1" style={{ top: 'calc(var(--app-navbar-offset, 5.5rem) + 0.5rem)' }}>
         <div className="flex shrink-0 items-center gap-1 rounded-lg border border-border bg-background/95 p-1 shadow-lg backdrop-blur-sm">
           <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-3 text-xs" onClick={handleOpen} disabled={loading}>
             {loading ? <Loader2 className="size-3.5 animate-spin" /> : <FolderOpen className="size-3.5" />}
             Open
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 px-3 text-xs"
+            onClick={handleCloseFile}
+            disabled={!data}
+            title="Close currently loaded file"
+          >
+            <FolderX className="size-3.5" />
+            Close
           </Button>
           <div className="h-5 w-px bg-border" />
           <Button
@@ -266,14 +290,6 @@ export function DemandEditorPage() {
         )}
 
         {data && (
-          <div className="hidden shrink-0 items-center gap-2 rounded-lg border border-border bg-background/95 px-3 py-1.5 text-[11px] text-muted-foreground shadow-lg backdrop-blur-sm sm:flex">
-            <span className="tabular-nums font-medium text-foreground">{data.points.length}</span> points
-            <span className="text-border">·</span>
-            <span className="tabular-nums font-medium text-foreground">{data.pops.length}</span> pops
-          </div>
-        )}
-
-        {data && (
           <Button
             variant="ghost"
             size="sm"
@@ -288,7 +304,8 @@ export function DemandEditorPage() {
 
       {data && showSidebar && (
         <div
-          className={`absolute bottom-2 right-2 top-14 z-20 flex ${sidebarWidthClass} min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-background/95 shadow-2xl backdrop-blur-md sm:bottom-3 sm:right-3 sm:top-16`}
+          className={`fixed bottom-3 right-3 z-40 flex ${sidebarWidthClass} min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-background/95 shadow-2xl backdrop-blur-md`}
+          style={{ top: 'calc(var(--app-navbar-offset, 5.5rem) + 3rem)' }}
         >
           <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

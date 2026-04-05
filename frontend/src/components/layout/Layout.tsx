@@ -7,9 +7,14 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="datagen-accent flex h-screen flex-col overflow-hidden bg-background text-foreground">
+    <div className="datagen-accent h-screen overflow-hidden bg-background text-foreground">
       <Navbar />
-      <main className="flex-1 overflow-hidden">{children}</main>
+      <main
+        className="h-full overflow-hidden"
+        style={{ paddingTop: 'var(--app-navbar-offset, 5.5rem)' }}
+      >
+        {children}
+      </main>
       <Toaster richColors position="bottom-right" />
     </div>
   );

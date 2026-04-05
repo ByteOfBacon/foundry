@@ -95,6 +95,7 @@ func errResp[T any](err error) Response[T] {
 type App struct {
 	ctx       context.Context
 	dataDir   string
+	sourceDir string
 	scriptDir string
 
 	scriptMu     sync.Mutex
@@ -108,23 +109,174 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
-	// Data dir: same directory as the executable (or CWD in dev mode)
-	exe, err := os.Executable()
-	if err == nil {
-		a.dataDir = filepath.Dir(exe)
-	} else {
-		a.dataDir, _ = os.Getwd()
+	a.dataDir = resolveDataDir()
+	_ = os.MkdirAll(a.dataDir, 0o755)
+
+	legacyDataDir := resolveLegacyDataDir()
+	if legacyDataDir != "" {
+		if err := migrateLegacyData(legacyDataDir, a.dataDir); err != nil {
+			fmt.Printf("[foundry] data migration warning: %v\n", err)
+		}
 	}
 
-	// In development (wails dev), dataDir ends up being the temp build dir.
-	// The actual project root is two levels up from that.
-	// We detect dev mode by checking if ../scripts exists.
-	cwd, _ := os.Getwd()
-	if _, err := os.Stat(filepath.Join(cwd, "scripts")); err == nil {
-		a.dataDir = cwd
-	}
-
+	a.sourceDir = resolveScriptsSourceDir(legacyDataDir)
 	a.scriptDir = filepath.Join(a.dataDir, "scripts")
+
+	if err := syncRuntimeScripts(a.sourceDir, a.scriptDir); err != nil {
+		fmt.Printf("[foundry] script sync warning: %v\n", err)
+	}
+}
+
+func resolveLegacyDataDir() string {
+	cwd, cwdErr := os.Getwd()
+	if cwdErr == nil {
+		if validScriptDir(filepath.Join(cwd, "scripts")) {
+			return cwd
+		}
+	}
+
+	exePath, exeErr := os.Executable()
+	if exeErr == nil {
+		return filepath.Dir(exePath)
+	}
+
+	if cwdErr == nil {
+		return cwd
+	}
+
+	return ""
+}
+
+func resolveScriptsSourceDir(legacyDataDir string) string {
+	if legacyDataDir != "" {
+		candidate := filepath.Join(legacyDataDir, "scripts")
+		if validScriptDir(candidate) {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func validScriptDir(dir string) bool {
+	if dir == "" {
+		return false
+	}
+	if _, err := os.Stat(filepath.Join(dir, "package.json")); err != nil {
+		return false
+	}
+	if _, err := os.Stat(filepath.Join(dir, "src")); err != nil {
+		return false
+	}
+	return true
+}
+
+func migrateLegacyData(legacyDir string, dataDir string) error {
+	if legacyDir == "" || dataDir == "" {
+		return nil
+	}
+	cleanLegacy := filepath.Clean(legacyDir)
+	cleanData := filepath.Clean(dataDir)
+	if cleanLegacy == cleanData {
+		return nil
+	}
+
+	targets := []string{"config.json", "processed_data", "raw_data", "map_tiles", "demand_data.json"}
+	for _, name := range targets {
+		src := filepath.Join(cleanLegacy, name)
+		dst := filepath.Join(cleanData, name)
+		if _, err := os.Stat(src); err != nil {
+			continue
+		}
+		if _, err := os.Stat(dst); err == nil {
+			continue
+		}
+		if err := copyPath(src, dst); err != nil {
+			return fmt.Errorf("migrate %s: %w", name, err)
+		}
+	}
+
+	return nil
+}
+
+func syncRuntimeScripts(sourceDir string, runtimeDir string) error {
+	if runtimeDir == "" {
+		return fmt.Errorf("runtime scripts directory is empty")
+	}
+
+	if err := os.MkdirAll(runtimeDir, 0o755); err != nil {
+		return fmt.Errorf("create runtime scripts dir: %w", err)
+	}
+
+	if sourceDir == "" {
+		return nil
+	}
+
+	if filepath.Clean(sourceDir) == filepath.Clean(runtimeDir) {
+		return nil
+	}
+
+	for _, fileName := range []string{"package.json", "pnpm-lock.yaml", "package-lock.json", "npm-shrinkwrap.json"} {
+		src := filepath.Join(sourceDir, fileName)
+		if _, err := os.Stat(src); err != nil {
+			continue
+		}
+		dst := filepath.Join(runtimeDir, fileName)
+		if err := copyPath(src, dst); err != nil {
+			return fmt.Errorf("sync script file %s: %w", fileName, err)
+		}
+	}
+
+	if err := copyPath(filepath.Join(sourceDir, "src"), filepath.Join(runtimeDir, "src")); err != nil {
+		return fmt.Errorf("sync script sources: %w", err)
+	}
+
+	return nil
+}
+
+func copyPath(src string, dst string) error {
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		_ = os.RemoveAll(dst)
+		if err := os.MkdirAll(dst, info.Mode()); err != nil {
+			return err
+		}
+		entries, err := os.ReadDir(src)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			if err := copyPath(filepath.Join(src, entry.Name()), filepath.Join(dst, entry.Name())); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
+
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+
+	return os.Chmod(dst, info.Mode())
 }
 
 func (a *App) shutdown(_ context.Context) {

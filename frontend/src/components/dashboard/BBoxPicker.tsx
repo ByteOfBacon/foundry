@@ -144,7 +144,6 @@ export function BBoxPicker({ value, onChange }: BBoxPickerProps) {
       clearTimeout(resizeTimer);
       try { map.remove(); } catch { /* ignore WebGL cleanup errors in Wails WebView */ }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleReset = () => {

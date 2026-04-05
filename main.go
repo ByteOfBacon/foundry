@@ -15,9 +15,9 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:  "Map Data Generator",
-		Width:  1280,
-		Height: 820,
+		Title:     "Foundry",
+		Width:     1280,
+		Height:    820,
 		MinWidth:  960,
 		MinHeight: 640,
 		AssetServer: &assetserver.Options{

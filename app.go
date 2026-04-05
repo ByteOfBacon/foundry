@@ -20,6 +20,8 @@ import (
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+const maxDemandDialogFileBytes int64 = 128 * 1024 * 1024
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Place struct {
@@ -265,12 +267,23 @@ func (a *App) OpenDemandFileDialog() Response[DemandData] {
 	if err != nil || path == "" {
 		return Response[DemandData]{Status: "cancelled"}
 	}
-	raw, err := os.ReadFile(path)
+	info, err := os.Stat(path)
 	if err != nil {
 		return errResp[DemandData](err)
 	}
+	if info.Size() > maxDemandDialogFileBytes {
+		return errResp[DemandData](fmt.Errorf("selected file is too large (%0.1f MB). Please use a file under 128 MB", float64(info.Size())/1024/1024))
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return errResp[DemandData](err)
+	}
+	defer f.Close()
+
 	var d DemandData
-	if err := json.Unmarshal(raw, &d); err != nil {
+	dec := json.NewDecoder(f)
+	if err := dec.Decode(&d); err != nil {
 		return errResp[DemandData](err)
 	}
 	if d.Points == nil {

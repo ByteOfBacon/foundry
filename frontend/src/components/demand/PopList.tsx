@@ -4,18 +4,25 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, ArrowRight } from 'lucide-react';
 
+const POP_LIST_RENDER_LIMIT = 2000;
+
 interface PopListProps {
   pops: Pop[];
   points: DemandPoint[];
+  onSelectPoint?: (id: string | null) => void;
 }
 
-export function PopList({ pops, points }: PopListProps) {
+export function PopList({ pops, points, onSelectPoint }: PopListProps) {
   const { deletePop, selectPoint } = useDemandStore();
+
+  const select = (id: string) => (onSelectPoint ? onSelectPoint(id) : selectPoint(id));
 
   const pointName = (id: string) => {
     const p = points.find((pt) => pt.id === id);
     return p ? p.id : id;
   };
+
+  const visiblePops = pops.slice(0, POP_LIST_RENDER_LIMIT);
 
   return (
     <div className="flex flex-col gap-2">
@@ -30,7 +37,7 @@ export function PopList({ pops, points }: PopListProps) {
           {pops.length === 0 ? (
             <p className="text-xs text-muted-foreground py-4 text-center">No pops defined</p>
           ) : (
-            pops.map((pop) => (
+            visiblePops.map((pop) => (
               <div
                 key={pop.id}
                 className="group flex items-center justify-between rounded px-2 py-1.5 hover:bg-accent/50 gap-2"
@@ -39,14 +46,14 @@ export function PopList({ pops, points }: PopListProps) {
                   <div className="flex items-center gap-1.5 text-xs">
                     <button
                       className="font-mono truncate max-w-[80px] hover:text-primary transition-colors"
-                      onClick={() => selectPoint(pop.residenceId)}
+                      onClick={() => select(pop.residenceId)}
                     >
                       {pointName(pop.residenceId)}
                     </button>
                     <ArrowRight className="size-3 text-muted-foreground shrink-0" />
                     <button
                       className="font-mono truncate max-w-[80px] hover:text-primary transition-colors"
-                      onClick={() => selectPoint(pop.jobId)}
+                      onClick={() => select(pop.jobId)}
                     >
                       {pointName(pop.jobId)}
                     </button>
@@ -65,6 +72,11 @@ export function PopList({ pops, points }: PopListProps) {
                 </Button>
               </div>
             ))
+          )}
+          {pops.length > POP_LIST_RENDER_LIMIT && (
+            <p className="text-[11px] text-muted-foreground px-2 py-1">
+              Showing first {POP_LIST_RENDER_LIMIT.toLocaleString()} pops.
+            </p>
           )}
         </div>
       </ScrollArea>

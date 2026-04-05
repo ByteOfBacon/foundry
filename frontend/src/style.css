@@ -148,6 +148,17 @@
 .maplibregl-canvas-container.maplibregl-interactive.cursor-grab { cursor: grab; }
 .maplibregl-canvas-container.maplibregl-interactive.cursor-pointer { cursor: pointer; }
 
+/* Hide default number input spin buttons for consistent UI styling */
+input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* Log terminal */
 .log-terminal {
   font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;

@@ -1,7 +1,7 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "Map Data Generator",
-  "outputfilename": "map-data-generator",
+  "name": "Foundry",
+  "outputfilename": "foundry",
   "frontend:install": "pnpm install",
   "frontend:build": "pnpm run build",
   "frontend:dev:watcher": "pnpm run dev",
@@ -12,7 +12,7 @@
   },
   "info": {
     "companyName": "Subway Builder Modded",
-    "productName": "Map Data Generator",
+    "productName": "Foundry",
     "productVersion": "v0.1.0",
     "copyright": "Copyright (c) 2026 Subway Builder Modded",
     "comments": "Generate and edit map data for Subway Builder cities"

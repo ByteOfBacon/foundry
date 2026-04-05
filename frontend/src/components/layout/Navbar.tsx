@@ -23,7 +23,7 @@ export function Navbar() {
     >
       {/* App identity */}
       <div className="flex items-center gap-2 px-4" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        <span className="text-primary font-bold text-sm tracking-tight">Map Data Generator</span>
+        <span className="text-primary font-bold text-sm tracking-tight">Foundry</span>
       </div>
 
       <div className="h-4 w-px bg-border mx-1" />

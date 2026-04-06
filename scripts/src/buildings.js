@@ -23,43 +23,50 @@ const ROOT = path.join(__dirname, '../..');
 // Matching cell size used in the base game
 const CELL_SIZE = 0.0009; // degrees latitude
 
-// ─── Fetch ───────────────────────────────────────────────────────────────────
-
-// export async function fetchBuildings(place) {
-//   const bbox = toOverpassBbox(place.bbox);
-
-//   const query = `
-// [out:json][timeout:180];
-// (
-//   way["building"](${bbox.join(',')});
-// );
-// out geom;`;
-
-//   console.log(`[buildings] Querying Overpass for ${place.name} (${place.code})…`);
-//   console.time(`[buildings] fetch ${place.code}`);
-//   const data = await runQuery(query);
-//   console.timeEnd(`[buildings] fetch ${place.code}`);
-//   console.log(`[buildings] ${place.code}: ${data.elements.length} buildings`);
-
-//   return data.elements;
-// }
+// ─── Fetch by Overpass ────────────────────────────────────────────────────────────
 
 export async function fetchBuildings(place) {
+  const bbox = toOverpassBbox(place.bbox);
+
+  const query = `
+[out:json][timeout:180];
+(
+  way["building"](${bbox.join(',')});
+);
+out geom;`;
+
+  console.log(`[buildings] Querying Overpass for ${place.name} (${place.code})…`);
+  console.time(`[buildings] fetch ${place.code}`);
+  const data = await runQuery(query);
+  console.timeEnd(`[buildings] fetch ${place.code}`);
+  console.log(`[buildings] ${place.code}: ${data.elements.length} buildings`);
+
+  return data.elements;
+}
+
+// ─── Fetch by Overture ────────────────────────────────────────────────────────────
+
+export async function fetchBuildingsOverture(place) {
   const query = ` 
-    SELECT id, geometry, subtype, height, min_height
-    FROM read_parquet('s3://overturemaps-us-west-2/release/2026-03-18.0/theme=buildings/type=building/*')
+    SELECT 
+      id, 
+      names.primary AS name,
+      geometry, 
+      subtype, 
+      height,
+      tags
+    FROM read_parquet('s3://overturemaps-us-west-2/release/2026-03-18.0/theme=buildings/type=building/*, hive_partitioning=1')
     WHERE 
-      names.primary IS NOT NULL
       AND bbox.xmin BETWEEN ${place.bbox[0]} AND ${place.bbox[2]}
       AND bbox.ymin BETWEEN ${place.bbox[1]} AND ${place.bbox[3]}
-  `; // will take data from the most recent release (2 days ago to ensure it's fully available on S3)
+  `; // TODO: update to latest dataset - 2 days.
 
   console.log(`[buildings]Querying Overture for ${place.name} (${place.code})… with bbox ${place.bbox.join(',')}`);
   console.time(`[buildings] fetch ${place.code}`);
   const data = await runQueryOverture(query);
   console.timeEnd(`[buildings] fetch ${place.code}`);
-  console.log(`[buildings] ${place.code}: ${data.length} buildings`);
-  return data;
+  console.log(`[buildings] ${place.code}: ${data.getRows().length} buildings`);
+  return data.getRowObjectsJson(); // I think this will make JSON? 
 }
   
 
@@ -87,6 +94,14 @@ function optimizeIndex(idx) {
       count: idx.buildings.length,
       maxDepth: idx.maxDepth,
     },
+  };
+}
+
+function optimizeOvertureBuilding(b) {
+  return {
+    b: [b.minLong, b.minLat, b.maxLong, b.maxLat],  
+    f: b.foundationDepth,
+    p: b.geometry,
   };
 }
 

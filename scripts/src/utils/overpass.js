@@ -80,7 +80,6 @@ export async function runQueryOverture(query) {
     const columns = data.getColumns();
     console.log(`Columns: ${columns.join(', ')}`);
     return data;
-    db.disconnectSync();
   } catch (err) {
     console.error('Error running Overture query:', query, err);
     throw err;

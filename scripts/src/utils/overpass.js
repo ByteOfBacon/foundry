@@ -5,8 +5,10 @@ import { Readable } from 'stream';
  * Execute an Overpass API query and return the parsed JSON result.
  * Streams the response to handle large payloads without OOM.
  */
+
 export async function runQuery(query) {
-  const res = await fetch('https://maps.mail.ru/osm/tools/overpass/api/interpreter', {
+  const res = await fetch('https://overpass.private.coffee/api/interpreter', { //using global private.coffee instance, non-rate limited.
+    // for PROD, maybe use https://overpass-api.de/api/interpreter to avoid overloading the above instance, this one is has a rate limit of 1GB per day.
     credentials: 'omit',
     headers: {
       'User-Agent': 'SubwayBuilder-DataGenerator (https://github.com/Subway-Builder-Modded)',

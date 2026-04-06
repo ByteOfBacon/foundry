@@ -14,35 +14,54 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as turf from '@turf/turf';
-import { runQuery, toOverpassBbox } from './utils/overpass.js';
+import { runQuery, runQueryOverture, toOverpassBbox} from './utils/overpass.js';
 import { writeJsonFile, readJsonFile } from './utils/file.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(__dirname, '../..');
 
 // Matching cell size used in the base game
 const CELL_SIZE = 0.0009; // degrees latitude
 
 // ─── Fetch ───────────────────────────────────────────────────────────────────
 
+// export async function fetchBuildings(place) {
+//   const bbox = toOverpassBbox(place.bbox);
+
+//   const query = `
+// [out:json][timeout:180];
+// (
+//   way["building"](${bbox.join(',')});
+// );
+// out geom;`;
+
+//   console.log(`[buildings] Querying Overpass for ${place.name} (${place.code})…`);
+//   console.time(`[buildings] fetch ${place.code}`);
+//   const data = await runQuery(query);
+//   console.timeEnd(`[buildings] fetch ${place.code}`);
+//   console.log(`[buildings] ${place.code}: ${data.elements.length} buildings`);
+
+//   return data.elements;
+// }
+
 export async function fetchBuildings(place) {
-  const bbox = toOverpassBbox(place.bbox);
+  const query = ` 
+    SELECT id, geometry, subtype, height, min_height
+    FROM read_parquet('s3://overturemaps-us-west-2/release/2026-03-18.0/theme=buildings/type=building/*')
+    WHERE 
+      names.primary IS NOT NULL
+      AND bbox.xmin BETWEEN ${place.bbox[0]} AND ${place.bbox[2]}
+      AND bbox.ymin BETWEEN ${place.bbox[1]} AND ${place.bbox[3]}
+  `; // will take data from the most recent release (2 days ago to ensure it's fully available on S3)
 
-  const query = `
-[out:json][timeout:180];
-(
-  way["building"](${bbox.join(',')});
-);
-out geom;`;
-
-  console.log(`[buildings] Querying Overpass for ${place.name} (${place.code})…`);
+  console.log(`[buildings]Querying Overture for ${place.name} (${place.code})… with bbox ${place.bbox.join(',')}`);
   console.time(`[buildings] fetch ${place.code}`);
-  const data = await runQuery(query);
+  const data = await runQueryOverture(query);
   console.timeEnd(`[buildings] fetch ${place.code}`);
-  console.log(`[buildings] ${place.code}: ${data.elements.length} buildings`);
-
-  return data.elements;
+  console.log(`[buildings] ${place.code}: ${data.length} buildings`);
+  return data;
 }
+  
 
 // ─── Process ─────────────────────────────────────────────────────────────────
 
@@ -186,15 +205,15 @@ async function run(placeCode) {
     await writeJsonFile(rawPath, rawBuildings);
 
     // Process
-    console.log(`[buildings] Processing index for ${place.code}…`);
-    console.time(`[buildings] process ${place.code}`);
-    const index = processBuildings(rawBuildings);
-    console.timeEnd(`[buildings] process ${place.code}`);
+    // console.log(`[buildings] Processing index for ${place.code}…`);
+    // console.time(`[buildings] process ${place.code}`);
+    // const index = processBuildings(rawBuildings);
+    // console.timeEnd(`[buildings] process ${place.code}`);
 
-    const outPath = path.join(ROOT, 'processed_data', place.code, 'buildings_index.json');
-    console.log(`[buildings] Writing buildings_index.json for ${place.code}…`);
-    await writeJsonFile(outPath, index);
-    console.log(`[buildings] Done: ${place.code} — ${index.stats.count} buildings`);
+    // const outPath = path.join(ROOT, 'processed_data', place.code, 'buildings_index.json');
+    // console.log(`[buildings] Writing buildings_index.json for ${place.code}…`);
+    // await writeJsonFile(outPath, index);
+    // console.log(`[buildings] Done: ${place.code} — ${index.stats.count} buildings`);
   }
 }
 

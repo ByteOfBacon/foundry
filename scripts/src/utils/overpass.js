@@ -8,8 +8,8 @@ import duckdb, { DuckDBConnection } from '@duckdb/node-api';
  */
 
 export async function runQuery(query) {
-  const res = await fetch('https://overpass.private.coffee/api/interpreter', { //using global private.coffee instance, non-rate limited.
-    // for PROD, maybe use https://overpass-api.de/api/interpreter to avoid overloading the above instance, this one is has a rate limit of 1GB per day.
+  const res = await fetch('https://overpass-api.de/api/interpreter', { //1GB daily rate limit.
+   
     credentials: 'omit',
     headers: {
       'User-Agent': 'SubwayBuilder-DataGenerator (https://github.com/Subway-Builder-Modded)',

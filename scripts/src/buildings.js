@@ -25,24 +25,24 @@ const CELL_SIZE = 0.0009; // degrees latitude
 
 // ─── Fetch by Overpass ────────────────────────────────────────────────────────────
 
-export async function fetchBuildings(place) {
-  const bbox = toOverpassBbox(place.bbox);
+// export async function fetchBuildings(place) {
+//   const bbox = toOverpassBbox(place.bbox);
 
-  const query = `
-[out:json][timeout:180];
-(
-  way["building"](${bbox.join(',')});
-);
-out geom;`;
+//   const query = `
+// [out:json][timeout:180];
+// (
+//   way["building"](${bbox.join(',')});
+// );
+// out geom;`;
 
-  console.log(`[buildings] Querying Overpass for ${place.name} (${place.code})…`);
-  console.time(`[buildings] fetch ${place.code}`);
-  const data = await runQuery(query);
-  console.timeEnd(`[buildings] fetch ${place.code}`);
-  console.log(`[buildings] ${place.code}: ${data.elements.length} buildings`);
+//   console.log(`[buildings] Querying Overpass for ${place.name} (${place.code})…`);
+//   console.time(`[buildings] fetch ${place.code}`);
+//   const data = await runQuery(query);
+//   console.timeEnd(`[buildings] fetch ${place.code}`);
+//   console.log(`[buildings] ${place.code}: ${data.elements.length} buildings`);
 
-  return data.elements;
-}
+//   return data.elements;
+// }
 
 // ─── Fetch by Overture ────────────────────────────────────────────────────────────
 
@@ -53,11 +53,11 @@ export async function fetchBuildingsOverture(place) {
       names.primary AS name,
       geometry, 
       subtype, 
-      height,
-      tags
-    FROM read_parquet('s3://overturemaps-us-west-2/release/2026-03-18.0/theme=buildings/type=building/*, hive_partitioning=1')
+      num_floors_underground AS foundationDepth,
+
+    FROM read_parquet('s3://overturemaps-us-west-2/release/2026-03-18.0/theme=buildings/type=building/*')
     WHERE 
-      AND bbox.xmin BETWEEN ${place.bbox[0]} AND ${place.bbox[2]}
+      bbox.xmin BETWEEN ${place.bbox[0]} AND ${place.bbox[2]}
       AND bbox.ymin BETWEEN ${place.bbox[1]} AND ${place.bbox[3]}
   `; // TODO: update to latest dataset - 2 days.
 
@@ -105,6 +105,23 @@ function optimizeOvertureBuilding(b) {
   };
 }
 
+function optimizeOvertureIndex(idx) {
+  return {
+    cs: CELL_SIZE,
+    bbox: [idx.minLon, idx.minLat, idx.maxLon, idx.maxLat],
+    grid: [idx.cols, idx.rows],
+    cells: Object.keys(idx.cells).map((key) => [
+      ...key.split(',').map(Number),
+      ...idx.cells[key],
+    ]),
+    buildings: idx.buildings.map(optimizeOvertureBuilding),
+    stats: {
+      count: idx.buildings.length,
+      maxDepth: idx.maxDepth,
+    },
+  };
+}
+
 export function processBuildings(rawBuildings) {
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
   const processed = {};
@@ -143,7 +160,7 @@ export function processBuildings(rawBuildings) {
       bbox: { minLon: bMinLon, minLat: bMinLat, maxLon: bMaxLon, maxLat: bMaxLat },
       center: center.geometry.coordinates,
       geometry: poly.geometry.coordinates,
-      tags: building.tags,
+      foundationDepth: building.foundationDepth
     };
   });
 
@@ -168,17 +185,19 @@ export function processBuildings(rawBuildings) {
     cells[key].push(b.id);
   });
 
-  let maxDepth = 1;
+  let maxDepth = 10;
+  let minDepth = 1;
 
-  return optimizeIndex({
+  //return statement edited to only use overture methods now
+  //TODO add flags to config to specify which source to use.
+  return optimizeOvertureIndex({
     minLon, minLat, maxLon, maxLat,
     cols, rows,
     cells,
     buildings: Object.values(processed).map((b) => {
-      const depth = b.tags['building:levels:underground']
-        ? Number(b.tags['building:levels:underground'])
-        : 1;
+      const depth = b.foundationDepth || 1;
       if (depth > maxDepth) maxDepth = depth;
+      if (depth < minDepth) minDepth = depth;
 
       return {
         minX: b.bbox.minLon,
@@ -214,21 +233,21 @@ async function run(placeCode) {
     fs.mkdirSync(path.join(ROOT, 'processed_data', place.code), { recursive: true });
 
     // Fetch
-    const rawBuildings = await fetchBuildings(place);
+    const rawBuildings = await fetchBuildingsOverture(place);
     const rawPath = path.join(ROOT, 'raw_data', place.code, 'buildings.json');
     console.log(`[buildings] Writing raw data for ${place.code}…`);
     await writeJsonFile(rawPath, rawBuildings);
 
-    // Process
-    // console.log(`[buildings] Processing index for ${place.code}…`);
-    // console.time(`[buildings] process ${place.code}`);
-    // const index = processBuildings(rawBuildings);
-    // console.timeEnd(`[buildings] process ${place.code}`);
+    Process
+    console.log(`[buildings] Processing index for ${place.code}…`);
+    console.time(`[buildings] process ${place.code}`);
+    const index = processBuildings(rawBuildings);
+    console.timeEnd(`[buildings] process ${place.code}`);
 
-    // const outPath = path.join(ROOT, 'processed_data', place.code, 'buildings_index.json');
-    // console.log(`[buildings] Writing buildings_index.json for ${place.code}…`);
-    // await writeJsonFile(outPath, index);
-    // console.log(`[buildings] Done: ${place.code} — ${index.stats.count} buildings`);
+    const outPath = path.join(ROOT, 'processed_data', place.code, 'buildings_index.json');
+    console.log(`[buildings] Writing buildings_index.json for ${place.code}…`);
+    await writeJsonFile(outPath, index);
+    console.log(`[buildings] Done: ${place.code} — ${index.stats.count} buildings`);
   }
 }
 

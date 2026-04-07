@@ -75,10 +75,6 @@ export async function runQueryOverture(query) {
     await db.run(`INSTALL httpfs;`)
     await db.run(`SET s3_region='us-west-2';`); //change for your region
     const data = await db.runAndReadAll(query); //should return geojson
-    const rows = data.getRows();
-    console.log(`Query returned ${rows.length} rows`);
-    const columns = data.getColumns();
-    console.log(`Columns: ${columns.join(', ')}`);
     return data;
   } catch (err) {
     console.error('Error running Overture query:', query, err);
